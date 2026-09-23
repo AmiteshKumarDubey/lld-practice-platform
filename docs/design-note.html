@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Design Note: LLD Practice Platform</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 16mm 14mm 16mm 14mm;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.55;
+      color: #1a202c;
+      font-size: 12.5px;
+    }
+    h1 {
+      font-size: 20px;
+      color: #1a365d;
+      border-bottom: 2px solid #3182ce;
+      padding-bottom: 6px;
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+    h2 {
+      font-size: 15px;
+      color: #2b6cb0;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+    h3 {
+      font-size: 13.5px;
+      color: #2d3748;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+    h4 {
+      font-size: 12.5px;
+      color: #4a5568;
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+    p {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    ul, ol {
+      padding-left: 20px;
+      margin-top: 4px;
+      margin-bottom: 10px;
+    }
+    li {
+      margin-bottom: 3px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 11px;
+      page-break-inside: auto;
+    }
+    tr {
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #cbd5e0;
+      padding: 6px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #ebf8ff;
+      color: #2b6cb0;
+      font-weight: 600;
+    }
+    code {
+      background: #edf2f7;
+      color: #805ad5;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      font-size: 11px;
+    }
+    pre {
+      background: #1a202c;
+      color: #f7fafc;
+      padding: 10px 12px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-size: 10.5px;
+      line-height: 1.4;
+      margin: 10px 0;
+      page-break-inside: avoid;
+    }
+    pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+    }
+    blockquote {
+      border-left: 4px solid #3182ce;
+      margin: 10px 0;
+      padding: 6px 12px;
+      background: #f7fafc;
+      color: #4a5568;
+    }
+    hr {
+      border: 0;
+      height: 1px;
+      background: #cbd5e0;
+      margin: 16px 0;
+    }
+    strong {
+      color: #1a202c;
+    }
+  </style>
+</head>
+<body>
+  <h1>Design Note: LLD Practice Platform MVP Architecture</h1>
+<ul>
+<li><strong>Author:</strong> Amitesh Kumar Dubey</li>
+<li><strong>Date:</strong> 23 September 2026</li>
+<li><strong>Status:</strong> MVP Prototype — Assignment Submission</li>
+</ul>
+<hr>
+<h2>1. MVP Executive Summary</h2>
+<p>The <strong>LLD Practice Platform</strong> MVP is designed as an extensible, domain-focused monolith that enables software engineers to practice Low-Level System Design interactively. </p>
+<p>Rather than focusing on heavy cloud infrastructure (Kubernetes, microservices, distributed message queues), this system concentrates 100% of its engineering complexity on <strong>Object-Oriented Design (OOD)</strong>, clean domain abstractions, deterministic AST-based code analysis, and resilient LLM qualitative feedback orchestration.</p>
+<h3>Core Value Proposition &amp; Learner Journey</h3>
+<ol>
+<li><strong>Choose Problem:</strong> Select from a curated problem set (Parking Lot, Elevator Control System, Vending Machine, Rate Limiter).</li>
+<li><strong>Think / Design:</strong> Solicit template starter code/text and draft solutions in Code (TypeScript, Java, Python), Structured Text, or PlantUML.</li>
+<li><strong>Submit Solution:</strong> Post the solution and transition the attempt state to <code>EVALUATING</code>.</li>
+<li><strong>Get Hybrid Feedback:</strong> Receive instant deterministic score breakdown (class structure, encapsulation, SOLID anti-patterns) plus qualitative reasoning (trade-off analysis, edge cases, suggested refactorings).</li>
+<li><strong>Review &amp; Iterate:</strong> Compare scores against past attempts in attempt history, refine the design, and resubmit.</li>
+</ol>
+<hr>
+<h2>2. End-to-End Practice &amp; Evaluation Flow (Mermaid Diagram)</h2>
+<pre><code class="language-mermaid">sequenceDiagram
+    autonumber
+    actor Learner
+    participant UI as React Frontend
+    participant API as Express API Controller
+    participant Service as AttemptService
+    participant Repo as AttemptRepository
+    participant Pipe as EvaluationPipeline
+    participant Det as DeterministicChecker
+    participant LLM as LLMEvaluator / MockFallback
+
+    Learner-&gt;&gt;UI: Select LLD Problem (e.g. Parking Lot)
+    UI-&gt;&gt;API: GET /api/problems/:id
+    API--&gt;&gt;UI: Return Problem, Criteria &amp; Starter Template
+
+    Learner-&gt;&gt;UI: Start Attempt &amp; Write Design
+    UI-&gt;&gt;API: POST /api/attempts { problemId }
+    API-&gt;&gt;Service: createAttempt(problemId)
+    Service-&gt;&gt;Repo: save(Attempt: IN_PROGRESS)
+    Repo--&gt;&gt;UI: Return attemptId
+
+    Learner-&gt;&gt;UI: Submit Solution Code/Text
+    UI-&gt;&gt;API: POST /api/attempts/:id/submit { submissionContent, format }
+    API-&gt;&gt;Service: submitAttempt(attemptId, submission)
+    Service-&gt;&gt;Repo: updateStatus(EVALUATING)
+    
+    par Async Evaluation Execution
+        Service-&gt;&gt;Pipe: evaluate(submission, problemRubric)
+        Pipe-&gt;&gt;Det: checkStructureAndSolid(submission, rubric)
+        Det--&gt;&gt;Pipe: Return DeterministicScore &amp; Violations
+        
+        alt LLM Available &amp; Responsive
+            Pipe-&gt;&gt;LLM: generateQualitativeFeedback(submission, rubric)
+            LLM--&gt;&gt;Pipe: Return QualitativeFeedback (Strengths, Weaknesses, Suggestions)
+        else LLM Call Fails / Times out / Key Missing
+            Pipe-&gt;&gt;LLM: Fallback to MockLLMEvaluator
+            LLM--&gt;&gt;Pipe: Return Resilient Heuristic Feedback
+        end
+        
+        Pipe--&gt;&gt;Service: Synthesized FeedbackReport
+        Service-&gt;&gt;Repo: updateStatus(COMPLETED, feedbackReport)
+    end
+
+    API--&gt;&gt;UI: Submission Accepted (status: EVALUATING)
+    
+    loop Status Polling / Hydration
+        UI-&gt;&gt;API: GET /api/attempts/:id
+        API--&gt;&gt;UI: Return Attempt (status &amp; feedback when COMPLETED)
+    end
+
+    Learner-&gt;&gt;UI: Review Feedback &amp; Iterate (Submit Version 2)
+</code></pre>
+<hr>
+<h2>3. Key Classes &amp; Interfaces (Domain Layer Design)</h2>
+<p>The core domain is structured following clean architecture principles. Domain entities have explicit encapsulation and domain logic, isolated from persistence and UI concerns.</p>
+<pre><code>                  +-------------------+
+                  |  IEvaluator (I)   |
+                  +-------------------+
+                            ^
+                            |
+           +----------------+----------------+
+           |                                 |
++----------------------+         +-----------------------+
+| DeterministicChecker |         |     LLMEvaluator      |
++----------------------+         +-----------------------+
+                                             | (fallback)
+                                 +-----------------------+
+                                 |   MockLLMEvaluator    |
+                                 +-----------------------+
+</code></pre>
+<h3>Class Responsibilities &amp; Abstractions</h3>
+<table>
+<thead>
+<tr>
+<th align="left">Component / Class Name</th>
+<th align="left">Type</th>
+<th align="left">Responsibility &amp; Design Rationale</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>Problem</code></td>
+<td align="left">Domain Entity</td>
+<td align="left">Encapsulates problem statement, difficulty, tags, requirements list, design rubrics, and starter code templates. Immutable domain root.</td>
+</tr>
+<tr>
+<td align="left"><code>Submission</code></td>
+<td align="left">Value Object</td>
+<td align="left">Represents a learner&#39;s submission snapshot. Holds <code>attemptId</code>, <code>version</code>, <code>format</code> (JAVA, TS, PYTHON, TEXT, PLANTUML), and raw design <code>content</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>Attempt</code></td>
+<td align="left">Aggregate Root</td>
+<td align="left">Manages attempt state lifecycle (<code>IN_PROGRESS</code>, <code>SUBMITTED</code>, <code>EVALUATING</code>, <code>COMPLETED</code>, <code>EVALUATION_FAILED</code>). Maintains an array of historical <code>Submission</code> snapshots and final <code>FeedbackReport</code>. Enforces state transition rules.</td>
+</tr>
+<tr>
+<td align="left"><code>FeedbackReport</code></td>
+<td align="left">Value Object</td>
+<td align="left">Holds synthesized evaluation output: overall score (0–100), deterministic score, qualitative score, SOLID violations list, missing required classes/methods, strengths, and actionable improvement recommendations.</td>
+</tr>
+<tr>
+<td align="left"><code>IEvaluator</code></td>
+<td align="left">Interface</td>
+<td align="left">Strategy interface for submission evaluation. Decouples the evaluation logic from specific checking strategies (<code>evaluate(submission: Submission, rubric: ProblemRubric): Promise&lt;PartialFeedbackReport&gt;</code>).</td>
+</tr>
+<tr>
+<td align="left"><code>DeterministicChecker</code></td>
+<td align="left">Class (Implements <code>IEvaluator</code>)</td>
+<td align="left">Performs static code &amp; text structure analysis. Uses regular expressions / AST parsers to inspect class definitions, interface declarations, enum usage, missing domain methods, naming conventions, and common SOLID anti-patterns (e.g., God Class, missing interfaces).</td>
+</tr>
+<tr>
+<td align="left"><code>LLMEvaluator</code></td>
+<td align="left">Class (Implements <code>IEvaluator</code>)</td>
+<td align="left">Connects to OpenAI/Claude LLM APIs using a structured JSON prompt schema to evaluate high-level design quality, design pattern appropriateness, trade-offs, and edge-case handling.</td>
+</tr>
+<tr>
+<td align="left"><code>MockLLMEvaluator</code></td>
+<td align="left">Class (Implements <code>IEvaluator</code>)</td>
+<td align="left">Fallback evaluator providing deterministic heuristic design critiques when LLM API keys are unconfigured, rate-limited, or timing out. Guarantees 100% platform availability.</td>
+</tr>
+<tr>
+<td align="left"><code>EvaluationPipeline</code></td>
+<td align="left">Domain Orchestrator</td>
+<td align="left">Executes <code>IEvaluator</code> implementations in parallel or sequence, handles timeouts (e.g., 8-second limit), handles exceptions gracefully, and merges partial feedback into a unified <code>FeedbackReport</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>IAttemptRepository</code></td>
+<td align="left">Interface</td>
+<td align="left">Data access abstraction for managing <code>Attempt</code> lifecycle persistence. Decouples domain services from database implementation.</td>
+</tr>
+<tr>
+<td align="left"><code>SQLiteAttemptRepository</code></td>
+<td align="left">Class (Implements <code>IAttemptRepository</code>)</td>
+<td align="left">SQLite / in-memory database adapter for persistent storage without requiring external DB containers.</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>4. Evaluation Approach &amp; Strategy</h2>
+<p>Evaluation operates on a <strong>hybrid strategy</strong>:</p>
+<ol>
+<li><p><strong>Deterministic Layer (Weight: 40%)</strong></p>
+<ul>
+<li><strong>Structure Check:</strong> Checks whether expected classes (e.g. <code>ParkingLot</code>, <code>ParkingSpot</code>, <code>Vehicle</code>, <code>Ticket</code>) and interfaces/enums (<code>VehicleType</code>, <code>IPricingStrategy</code>) are present.</li>
+<li><strong>Encapsulation &amp; Method Check:</strong> Verifies presence of public APIs and proper member access control.</li>
+<li><strong>SOLID Anti-Pattern Detection:</strong> Detects god classes (classes exceeding threshold complexity), hardcoded dependencies instead of dependency injection, and missing interfaces for strategy patterns.</li>
+</ul>
+</li>
+<li><p><strong>Qualitative Reasoning Layer (Weight: 60%)</strong></p>
+<ul>
+<li><strong>Design Pattern Correctness:</strong> Evaluates whether appropriate patterns (Strategy, State, Observer, Factory) were selected and properly implemented.</li>
+<li><strong>Trade-Off &amp; Edge Case Analysis:</strong> Evaluates how well the design handles concurrency, scalability boundaries, thread-safety, and invalid input states.</li>
+<li><strong>Actionable Guidance:</strong> Generates specific line-by-line refactoring recommendations.</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>5. Architectural Trade-offs &amp; Engineering Decisions</h2>
+<table>
+<thead>
+<tr>
+<th align="left">Decision Area</th>
+<th align="left">Chosen Approach</th>
+<th align="left">Alternative Considered</th>
+<th align="left">Rationale for Choice</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>System Architecture</strong></td>
+<td align="left">Simple Monolith (Express + Node + SQLite)</td>
+<td align="left">Microservices + Message Queues (RabbitMQ/Kafka)</td>
+<td align="left">Assignment spec strictly emphasizes LLD domain design over HLD infrastructure complexity. A monolith keeps deployment zero-config while providing instant local evaluation.</td>
+</tr>
+<tr>
+<td align="left"><strong>State Synchronization</strong></td>
+<td align="left">Async State + Client Polling</td>
+<td align="left">WebSockets / Server-Sent Events (SSE)</td>
+<td align="left">Polling <code>GET /api/attempts/:id</code> every 2s during evaluation is robust, stateless, trivial to recover from server restarts, and handles network disconnections gracefully.</td>
+</tr>
+<tr>
+<td align="left"><strong>LLM Resilience</strong></td>
+<td align="left">Strategy Pattern with <code>MockLLMEvaluator</code> Fallback</td>
+<td align="left">Blocking Sync API Call / Failing on Error</td>
+<td align="left">External LLM APIs can fail or require paid API keys. The mock fallback ensures the platform functions flawlessly out of the box for any evaluator testing the app.</td>
+</tr>
+<tr>
+<td align="left"><strong>Data Persistence</strong></td>
+<td align="left">SQLite / Abstracted Repository Pattern</td>
+<td align="left">In-memory only / Heavy PostgreSQL DB</td>
+<td align="left">SQLite provides true SQL persistence across app restarts with zero background daemon overhead. Abstracting it behind <code>IAttemptRepository</code> allows swapping to Postgres in 10 lines of code.</td>
+</tr>
+</tbody></table>
+
+</body>
+</html>
